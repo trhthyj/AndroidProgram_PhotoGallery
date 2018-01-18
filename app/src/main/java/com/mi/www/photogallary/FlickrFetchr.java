@@ -24,8 +24,19 @@ import java.util.List;
  */
 
 public class FlickrFetchr {
-    public static final String API_KEY_FLICKR = "a530343992926b24e24126fd6478f6e7";
-    public static final String TAG = "FlickrFetchr";
+    private static final String API_KEY_FLICKR = "a530343992926b24e24126fd6478f6e7";
+    private static final String TAG = "FlickrFetchr";
+    private static final String METHOD_GET_RECENT= "flickr.photos.getRecent";
+    private static final String METHOD_SEARCH= "flickr.photos.search";
+    private static final Uri BASE_URI = Uri
+            .parse("https://api.flickr.com/services/rest/")
+            .buildUpon()
+            .appendQueryParameter("api_key", API_KEY_FLICKR)
+            .appendQueryParameter("format", "json")
+            .appendQueryParameter("nojsoncallback", "1")
+            .appendQueryParameter("extras", "url_s")
+            .build();
+
 
     public byte[] getUrlBytes(String urlSpec) throws IOException {
         URL url = new URL(urlSpec);
@@ -52,30 +63,55 @@ public class FlickrFetchr {
         return new String(getUrlBytes(urlSpec));
     }
 
-    public List<GalleryItem> fetchItems() {
+    /**
+     * 获取最近的photo
+     * @return
+     */
+    public List<GalleryItem> fetchRecentPhotos(){
+        String url = buildUrl(METHOD_GET_RECENT, null);
+        return downloadGalleryItems(url);
+    }
+
+    /**
+     * 获取搜索结果photo
+     * @param query
+     * @return
+     */
+    public List<GalleryItem> searchPhotos(String query){
+        String url = buildUrl(METHOD_SEARCH, query);
+        return downloadGalleryItems(url);
+    }
+
+    private List<GalleryItem> downloadGalleryItems(String url) {
         List<GalleryItem> items = new ArrayList<>();
         try {
-            String url = Uri.parse("https://api.flickr.com/services/rest/")
+            /*String url = Uri.parse("https://api.flickr.com/services/rest/")
                     .buildUpon()
                     .appendQueryParameter("method", "flickr.photos.getRecent")
                     .appendQueryParameter("api_key", API_KEY_FLICKR)
                     .appendQueryParameter("format", "json")
                     .appendQueryParameter("nojsoncallback", "1")
                     .appendQueryParameter("extras", "url_s")
-                    .build().toString();
-            Log.e(TAG, url);
+                    .build().toString();*/
+
             String jsonString = getUrlString(url);
-            Log.e(TAG, jsonString);
             JSONObject jsonBody = new JSONObject(jsonString);
             parseItems(items, jsonBody);
-
         } catch (IOException e) {
             e.printStackTrace();
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        Log.e(TAG, items.size()+"");
         return items;
+    }
+
+    private String buildUrl(String method, String query){
+        Uri.Builder uriBuilder = BASE_URI.buildUpon()
+                .appendQueryParameter("method", method);
+        if (method.equals(METHOD_SEARCH)) {
+            uriBuilder.appendQueryParameter("text", query);
+        }
+        return uriBuilder.build().toString();
     }
 
     public void parseItems(List<GalleryItem> items, JSONObject jsonObject)
