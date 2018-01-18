@@ -61,7 +61,7 @@ public class FlickrFetchr {
                     .appendQueryParameter("api_key", API_KEY_FLICKR)
                     .appendQueryParameter("format", "json")
                     .appendQueryParameter("nojsoncallback", "1")
-                    .appendQueryParameter("extra", "url_s")
+                    .appendQueryParameter("extras", "url_s")
                     .build().toString();
             Log.e(TAG, url);
             String jsonString = getUrlString(url);
@@ -82,21 +82,21 @@ public class FlickrFetchr {
             throws IOException, JSONException{
         JSONObject photosJsonObject = jsonObject.getJSONObject("photos");
         JSONArray photoJsonArray = photosJsonObject.getJSONArray("photo");
-       /* for (int i = 0; i < photoJsonArray.length() ; i++) {
+        for (int i = 0; i < photoJsonArray.length() ; i++) {
             JSONObject photoJsonObject = photoJsonArray.getJSONObject(i);
             GalleryItem item = new GalleryItem();
             item.setCaption(photoJsonObject.getString("title"));
             item.setId(photoJsonObject.getString("id"));
-            *//*if(!photoJsonObject.has("url_s")){
+            if(!photoJsonObject.has("url_s")){
                 continue;
             }
-            item.setUrl(photoJsonObject.getString("url_s"));*//*
+            item.setUrl(photoJsonObject.getString("url_s"));
             items.add(item);
-        }*/
-        Gson gson =new Gson();
+        }
+       /* Gson gson =new Gson();
         Type galleryItemType = new TypeToken<ArrayList<GalleryItem>>(){}.getType();
         String jsonPhotoString = photoJsonArray.toString();
         List<GalleryItem> galleyItemList = gson.fromJson(jsonPhotoString, galleryItemType);
-        items.addAll(galleyItemList);
+        items.addAll(galleyItemList);*/
     }
 }
