@@ -1,6 +1,7 @@
 package com.mi.www.photogallary;
 
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -52,6 +53,8 @@ public class PhotoGallaryFragment extends Fragment {
         setRetainInstance(true);//横竖屏切换的时候不会销毁Fragment
         setHasOptionsMenu(true);//在fragment中处理optionMenu
         updateItems();
+
+        PollService.setServiceAlarm(getActivity(), true);
 
         Handler responseHandler = new Handler();
         mThumbnailDownloader = new ThumbnailDownloader<>(responseHandler);
@@ -123,6 +126,14 @@ public class PhotoGallaryFragment extends Fragment {
                 searchView.setQuery(query, false);
             }
         });
+
+        //判断定时服务是否开启，改变按钮文字
+        MenuItem toggleItem = menu.findItem(R.id.menu_item_toggle_polling);
+        if (PollService.isServiceAlarmOn(getActivity())) {
+            toggleItem.setTitle(R.string.stop_polling);
+        } else {
+            toggleItem.setTitle(R.string.start_polling);
+        }
     }
 
     @Override
@@ -131,6 +142,13 @@ public class PhotoGallaryFragment extends Fragment {
             case R.id.menu_item_clear:
                 QueryPreferences.setStoredQuery(getActivity(), null);
                 updateItems();
+                return true;
+            case R.id.menu_item_toggle_polling:
+                //判断定时服务是否开启
+                boolean shouldStartAlarm = !PollService.isServiceAlarmOn(getActivity());
+                PollService.setServiceAlarm(getActivity(), shouldStartAlarm);
+                //刷新按钮文字
+                getActivity().invalidateOptionsMenu();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
