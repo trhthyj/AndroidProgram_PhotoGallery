@@ -1,5 +1,6 @@
 package com.mi.www.photogallary;
 
+import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.Notification;
@@ -22,6 +23,10 @@ import java.util.concurrent.TimeUnit;
 public class PollService extends IntentService {
    private static final String TAG = "PollService";
    private static final long POLL_INTERVAL_MS = TimeUnit.MINUTES.toMillis(1);
+   public static final String ACTION_SHOW_NOTIFICATION = "com.mi.www.photogallary.SHOW_NOTIFICATION";
+   public static final String PERM_PRIVATE = "com.mi.www.photogallary.PRIVATE";
+   public static final String NOTIFY_ID = "NOTIFY_ID";
+   public static final String NOTIFICATION = "NOTIFICATION";
 
    public static Intent newIntent(Context context){
        return new Intent(context, PollService.class);
@@ -36,7 +41,6 @@ public class PollService extends IntentService {
         if (!isNetworkAvailableAndConnected()) {
             return;
         }
-
         String query = QueryPreferences.getStoreQuery(this);
         String lastResultId = QueryPreferences.getPrefLastResultId(this);//60秒
         List<GalleryItem> items;
@@ -65,13 +69,29 @@ public class PollService extends IntentService {
                     .setContentIntent(pendingIntent)
                     .setAutoCancel(true)//点击后消息会从抽屉中删除
                     .build();
-            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-            notificationManager.notify(0, notification);
 
+            //发送带权限的广播，有这个权限的应用才可以接收到此广播
+//            sendBroadcast(new Intent(ACTION_SHOW_NOTIFICATION), PERM_PRIVATE);
+            showBackgroundNotification(0, notification);
         }
         QueryPreferences.setLastResultId(this, resultId);
-        Log.e(TAG, "receive an intent:" + intent);
     }
+
+    /**
+     * 发送有序广播，
+     * @param notifyId 通知的标识id
+     * @param notification  传给receiver的通知实例
+     *    发送有序广播，VisibleFragment里面动态注册的广播先接收到，就返回setResultCode(Activity.RESULT_CANCELED)，
+     *    NotificationReceiver最后收到广播，在里面判断resultcode，为OK就发送通知，否则不发送通知。
+     */
+    private void showBackgroundNotification(int notifyId, Notification notification) {
+        Intent intent = new Intent(ACTION_SHOW_NOTIFICATION);
+        intent.putExtra(NOTIFY_ID, notifyId);
+        intent.putExtra(NOTIFICATION, notification);
+        sendOrderedBroadcast(intent, PERM_PRIVATE, null, null,
+                Activity.RESULT_OK, null, null);
+        //intent, 权限，resultReceiver，支持resultReceiver运行的handler，结果代码初始值
+   }
 
     /**
      * 使用alarmmanager在间隔一段时间后再次运行服务，测试：按back键后退可以，杀死进程不行
@@ -89,6 +109,8 @@ public class PollService extends IntentService {
             alarmManager.cancel(pendingIntent);
             pendingIntent.cancel();
         }
+        //存储alarm的状态让receiver使用
+        QueryPreferences.setAlarmOn(context, isOn);
     }
 
     /**
